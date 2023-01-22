@@ -1,6 +1,6 @@
 # tetris
 
-A new Flutter project.
+An implementation of tetris in Flutter, inspired by Mitch Koko.
 
 ## Getting Started
 

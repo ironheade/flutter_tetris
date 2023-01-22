@@ -5,17 +5,13 @@ import 'package:collection/collection.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'constants.dart';
 import 'package:flutter/services.dart';
-//import 'package:hive/hive.dart';
-//import 'package:hive_flutter/hive_flutter.dart';
 
 /*
 Todos:
-- increse speed upon points
 - store Scores locally
 */
 
 void main() {
-  //await Hive.initFlutter();
   runApp(const Tetris());
 }
 
@@ -61,7 +57,6 @@ class _GameAreaState extends State<GameArea> {
   bool startButtonVisible = true;
   double tabXPosition = 0;
   int rotationState = 0;
-
   int kTimeMSUpdate = kTimeMSStart;
 
   late Timer _timer;
@@ -114,18 +109,8 @@ class _GameAreaState extends State<GameArea> {
             for (var takenSquare in takenSquares) {
               if (takenSquare % 10 == 0) {
                 List<int> consecutiveList = [
-                  takenSquare,
-                  takenSquare + 1,
-                  takenSquare + 2,
-                  takenSquare + 3,
-                  takenSquare + 4,
-                  takenSquare + 5,
-                  takenSquare + 6,
-                  takenSquare + 7,
-                  takenSquare + 8,
-                  takenSquare + 9,
+                  for (int i = 0; i < 10; i++) takenSquare + i
                 ];
-
                 if ({...consecutiveList}
                         .intersection({...takenSquares}).length ==
                     10) {
@@ -157,10 +142,8 @@ class _GameAreaState extends State<GameArea> {
                 takenSquares = tempSquares;
               });
             }
-
             //create random new Piece
             int randomNumber = Random().nextInt(kAllPieces.length);
-
             newPiece = kAllPieces[nextForm];
             currentForm = nextForm;
             nextForm = randomNumber;
@@ -386,10 +369,9 @@ class _GameAreaState extends State<GameArea> {
                       textAlign: TextAlign.center,
                       maxLength: 3,
                       style: TextStyle(
-                        fontSize: 30,
-                        fontFamily: 'Orbitron',
-                        color: name.length == 3 ? Colors.grey : Colors.white,
-                      ),
+                          fontSize: 30,
+                          fontFamily: 'Orbitron',
+                          color: name.length == 3 ? Colors.grey : Colors.white),
                       decoration: const InputDecoration(
                         counterText: "",
                         border: InputBorder.none,
@@ -410,13 +392,11 @@ class _GameAreaState extends State<GameArea> {
                               })
                             : Null;
                       },
-                      child: Icon(
-                        Icons.replay,
-                        size: 40,
-                        color: name.length == 3
-                            ? Colors.white
-                            : Colors.grey.shade600,
-                      ),
+                      child: Icon(Icons.replay,
+                          size: 40,
+                          color: name.length == 3
+                              ? Colors.white
+                              : Colors.grey.shade600),
                     )
                   ],
                 ),
