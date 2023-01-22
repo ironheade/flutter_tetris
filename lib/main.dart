@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'constants.dart';
 import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 /*
 Todos:
@@ -13,6 +15,7 @@ Todos:
 */
 
 void main() {
+  //await Hive.initFlutter();
   runApp(const Tetris());
 }
 
@@ -58,26 +61,33 @@ class _GameAreaState extends State<GameArea> {
   bool startButtonVisible = true;
   double tabXPosition = 0;
   int rotationState = 0;
+
+  int kTimeMSUpdate = kTimeMSStart;
+
   late Timer _timer;
   String name = "";
 
   void startGame() {
     setState(() {
       points = 0;
+      kTimeMSUpdate = kTimeMSStart;
       takenSquares = [];
     });
     const duration = Duration(milliseconds: kTimeMSStart);
     setTimer(duration);
   }
 
+  void changeTimer(int time) {
+    _timer.cancel();
+    setTimer(Duration(milliseconds: time));
+  }
+
   Timer setTimer(Duration duration) {
     return _timer = Timer.periodic(duration, (timer) {
       if (speed) {
-        timer.cancel();
-        setTimer(Duration(milliseconds: kTimeMSStart ~/ 5));
+        changeTimer(kTimeMSUpdate ~/ 5);
       } else {
-        timer.cancel();
-        setTimer(Duration(milliseconds: kTimeMSStart));
+        changeTimer(kTimeMSUpdate);
       }
 
       setState(() {
@@ -139,6 +149,11 @@ class _GameAreaState extends State<GameArea> {
               setState(() {
                 points +=
                     kPointTable[(squaresToBeDeleted.length / 10 - 1).toInt()];
+
+                kTimeMSUpdate > kTimeMSMinimum
+                    ? kTimeMSUpdate -= squaresToBeDeleted.length ~/ 10 * 4
+                    : kTimeMSUpdate = kTimeMSMinimum;
+                changeTimer(kTimeMSUpdate);
                 takenSquares = tempSquares;
               });
             }
@@ -294,7 +309,7 @@ class _GameAreaState extends State<GameArea> {
                                         fontSize: 10, fontFamily: 'Orbitron'))
                             ],
                           ),
-                        )
+                        ),
                         //highScores
                       ],
                     ),

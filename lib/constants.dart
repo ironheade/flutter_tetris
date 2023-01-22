@@ -159,6 +159,7 @@ List<int> kPointTable = [40, 100, 300, 1200];
 const int kTotalSquares = 200;
 const int kWidthSquares = 10;
 const int kTimeMSStart = 500;
+const int kTimeMSMinimum = 200;
 
 Color kBackgroundColor = Colors.grey.shade800;
 Color kBackgroundColorLight = Colors.grey.shade800;
