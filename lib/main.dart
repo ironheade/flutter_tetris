@@ -5,8 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'constants.dart';
 import 'package:flutter/services.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+//import 'package:hive/hive.dart';
+//import 'package:hive_flutter/hive_flutter.dart';
 
 /*
 Todos:
