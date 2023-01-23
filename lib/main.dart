@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:tetris/extensions.dart';
 import 'constants.dart';
 import 'package:flutter/services.dart';
 
@@ -183,21 +184,11 @@ class _GameAreaState extends State<GameArea> {
                       //if the swipe has been upwards: rotate the piece and add one to the rotation State
                       if (details.primaryVelocity! < 0) {
                         List<int> tempPiece = newPiece
-                            .mapIndexed((index, element) => element +=
-                                kRotationSet[currentForm][rotationState][index])
+                            .rotated(currentForm, rotationState)
                             .toList();
                         //check if rotation would collide with existing pieces
                         //check if rotation would go over the side, overlap with left and right side at the same time means overlap
-                        if (!({...tempPiece}
-                                .intersection({...takenSquares}).isNotEmpty) &&
-                            !({
-                              ...tempPiece
-                            }.intersection({...kBelowBottomSide}).isNotEmpty) &&
-                            !(({...tempPiece}
-                                    .intersection({...kLeftSide}).isNotEmpty) &&
-                                ({
-                                  ...tempPiece
-                                }.intersection({...kRightSide}).isNotEmpty))) {
+                        if (tempPiece.rotationIsValid(takenSquares)) {
                           newPiece = tempPiece;
                           rotationState != 3
                               ? rotationState += 1
@@ -212,30 +203,16 @@ class _GameAreaState extends State<GameArea> {
                     });
                   },
                   //tapping left and right of center to move the piece
-                  onTap: () {
-                    game
-                        ? setState(() {
-                            tabXPosition <
-                                    MediaQuery.of(context).size.width * 0.4
-                                ? !({...newPiece}.intersection(
-                                            {...kLeftSide}).isNotEmpty) &&
-                                        !({...newPiece.map((e) => e -= 1)}
-                                            .intersection(
-                                                {...takenSquares}).isNotEmpty)
-                                    ? newPiece =
-                                        newPiece.map((e) => e -= 1).toList()
-                                    : Null //go left
-                                : !({...newPiece}.intersection(
-                                            {...kRightSide}).isNotEmpty) &&
-                                        !({...newPiece.map((e) => e += 1)}
-                                            .intersection(
-                                                {...takenSquares}).isNotEmpty)
-                                    ? newPiece =
-                                        newPiece.map((e) => e += 1).toList()
-                                    : Null; //go right
-                          })
-                        : Null;
-                  },
+                  onTap: () => game
+                      ? setState(() {
+                          newPiece = newPiece.moveIfValid(
+                              takenSquares,
+                              tabXPosition <
+                                      MediaQuery.of(context).size.width * 0.4
+                                  ? Direction.left
+                                  : Direction.right);
+                        })
+                      : null,
                   child: GridView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
