@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -59,6 +60,7 @@ class _GameAreaState extends State<GameArea> {
   double tabXPosition = 0;
   int rotationState = 0;
   int kTimeMSUpdate = kTimeMSStart;
+  bool infoScreenVisible = false;
 
   late Timer _timer;
   String name = "";
@@ -79,79 +81,95 @@ class _GameAreaState extends State<GameArea> {
   }
 
   Timer setTimer(Duration duration) {
-    return _timer = Timer.periodic(duration, (timer) {
-      if (speed) {
-        changeTimer(kTimeMSUpdate ~/ 5);
-      } else {
-        changeTimer(kTimeMSUpdate);
-      }
-
-      setState(() {
-        //check for movement and move the Tetris piece a row down
-        List<int> tempPiece = [];
-        tempPiece = newPiece.map((e) => e += 10).toList();
-        //if space below piece is free set the piece to space below
-        if (tempPiece.reduce(max) < 200 &&
-            !({...tempPiece}.intersection({...takenSquares}).isNotEmpty)) {
-          newPiece = tempPiece;
+    return _timer = Timer.periodic(
+      duration,
+      (timer) {
+        if (speed) {
+          changeTimer(kTimeMSUpdate ~/ 5);
         } else {
-          setState(() {
-            //add Tetris Piece to the taken pieces
-            takenSquares = List.from(takenSquares)..addAll(newPiece);
-            //check if top side has been reached, in this case game over
-            if (({...kTopSide}.intersection({...takenSquares}).isNotEmpty)) {
-              _timer.cancel();
-              gameOverScreenVisible = true;
-              game = false;
-            }
-            rotationState = 0;
-            //check for full lines
-            List<int> squaresToBeDeleted = [];
-            for (var takenSquare in takenSquares) {
-              if (takenSquare % 10 == 0) {
-                List<int> consecutiveList = [
-                  for (int i = 0; i < 10; i++) takenSquare + i
-                ];
-                if ({...consecutiveList}
-                        .intersection({...takenSquares}).length ==
-                    10) {
-                  squaresToBeDeleted = List.from(squaresToBeDeleted)
-                    ..addAll(consecutiveList);
-                }
-              }
-            }
-            if (squaresToBeDeleted.isNotEmpty) {
-              List<int> tempSquares = takenSquares
-                  .toSet()
-                  .difference(squaresToBeDeleted.toSet())
-                  .toList()
-                  .toList();
+          changeTimer(kTimeMSUpdate);
+        }
 
-              for (int i = 0; i < tempSquares.length; i++) {
-                if (tempSquares[i] < squaresToBeDeleted.min) {
-                  tempSquares[i] = tempSquares[i] + squaresToBeDeleted.length;
-                }
-              }
+        setState(
+          () {
+            //check for movement and move the Tetris piece a row down
+            List<int> tempPiece = [];
+            tempPiece = newPiece.map((e) => e += 10).toList();
+            //if space below piece is free set the piece to space below
+            if (tempPiece.reduce(max) < 200 &&
+                !({...tempPiece}.intersection({...takenSquares}).isNotEmpty)) {
+              newPiece = tempPiece;
+            } else {
               setState(() {
-                points +=
-                    kPointTable[(squaresToBeDeleted.length / 10 - 1).toInt()];
+                //add Tetris Piece to the taken pieces
+                takenSquares = List.from(takenSquares)..addAll(newPiece);
+                //check if top side has been reached, in this case game over
+                if (({...kTopSide}
+                    .intersection({...takenSquares}).isNotEmpty)) {
+                  _timer.cancel();
+                  gameOverScreenVisible = true;
+                  game = false;
+                }
+                rotationState = 0;
+                //check for full lines
+                List<int> squaresToBeDeleted = [];
+                for (var takenSquare in takenSquares) {
+                  if (takenSquare % 10 == 0) {
+                    List<int> consecutiveList = [
+                      for (int i = 0; i < 10; i++) takenSquare + i
+                    ];
+                    if ({...consecutiveList}
+                            .intersection({...takenSquares}).length ==
+                        10) {
+                      squaresToBeDeleted = List.from(squaresToBeDeleted)
+                        ..addAll(consecutiveList);
+                    }
+                  }
+                }
+                //if complete rows exist remove them from the pile of taken squares
+                if (squaresToBeDeleted.isNotEmpty) {
+                  List<int> tempSquares = takenSquares
+                      .toSet()
+                      .difference(squaresToBeDeleted.toSet())
+                      .toList()
+                      .toList();
 
-                kTimeMSUpdate > kTimeMSMinimum
-                    ? kTimeMSUpdate -= squaresToBeDeleted.length ~/ 10 * 4
-                    : kTimeMSUpdate = kTimeMSMinimum;
-                changeTimer(kTimeMSUpdate);
-                takenSquares = tempSquares;
+                  //keep only every element divisible by 0 and sort
+                  List<int> squaresToBeDeletedShort =
+                      squaresToBeDeleted.where((e) => e % 10 == 0).toList();
+                  squaresToBeDeletedShort.sort();
+                  for (var shortElement in squaresToBeDeletedShort) {
+                    for (int i = 0; i < tempSquares.length; i++) {
+                      if (tempSquares[i] < shortElement) {
+                        tempSquares[i] = tempSquares[i] + 10;
+                      }
+                    }
+                  }
+
+                  setState(
+                    () {
+                      points += kPointTable[
+                          (squaresToBeDeleted.length / 10 - 1).toInt()];
+
+                      kTimeMSUpdate > kTimeMSMinimum
+                          ? kTimeMSUpdate -= squaresToBeDeleted.length ~/ 10 * 4
+                          : kTimeMSUpdate = kTimeMSMinimum;
+                      changeTimer(kTimeMSUpdate);
+                      takenSquares = tempSquares;
+                    },
+                  );
+                }
+                //create random new Piece
+                int randomNumber = Random().nextInt(kAllPieces.length);
+                newPiece = kAllPieces[nextForm];
+                currentForm = nextForm;
+                nextForm = randomNumber;
               });
             }
-            //create random new Piece
-            int randomNumber = Random().nextInt(kAllPieces.length);
-            newPiece = kAllPieces[nextForm];
-            currentForm = nextForm;
-            nextForm = randomNumber;
-          });
-        }
-      });
-    });
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -237,6 +255,7 @@ class _GameAreaState extends State<GameArea> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    //right elements on top
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -270,11 +289,31 @@ class _GameAreaState extends State<GameArea> {
                             ],
                           ),
                         ),
+                        SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  infoScreenVisible = true;
+                                });
+                              },
+                              child: Icon(
+                                Icons.info_outline,
+                                color: infoScreenVisible
+                                    ? Colors.grey
+                                    : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+
                         //highScores
                       ],
                     ),
                     Visibility(
-                      visible: startButtonVisible,
+                      visible: startButtonVisible && !infoScreenVisible,
                       child: GestureDetector(
                         onTap: () {
                           game
@@ -375,6 +414,84 @@ class _GameAreaState extends State<GameArea> {
                               ? Colors.white
                               : Colors.grey.shade600),
                     )
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Visibility(
+          visible: infoScreenVisible,
+          child: Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.8,
+                width: MediaQuery.of(context).size.width * 0.8,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            "how to play",
+                            style:
+                                TextStyle(fontFamily: 'Orbitron', fontSize: 25),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              "Tap left/right to move left/right\n\n"
+                              "Swipe down and hold to accelerate, release to decelerate\n\n"
+                              "Swipe up to rotate piece\n\n"
+                              "Controls apply to playing field\n\n\n\n"
+                              "Enter three character name after game to replay",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontFamily: 'Orbitron', fontSize: 15),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "Game by Konrad Bendzuck",
+                      style: TextStyle(fontFamily: 'Orbitron', fontSize: 10),
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    GestureDetector(
+                      onTap: (() {
+                        setState(() {
+                          infoScreenVisible = false;
+                        });
+                      }),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.08,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.close,
+                            size: 30,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
